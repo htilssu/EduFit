@@ -7,7 +7,7 @@ import {
   Select,
 } from "@mantine/core";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface YearStudy {
   year: string;
@@ -24,11 +24,12 @@ interface Semester {
 interface CreateTimelineModalProps {
   opened: boolean;
   onClose: () => void;
-  timelineName: string;
-  setTimelineName: (name: string) => void;
-  timelineDesc: string;
-  setTimelineDesc: (desc: string) => void;
-  handleCreate: () => void;
+  onSubmit: (data: {
+    name: string;
+    description: string;
+    year: string;
+    semester: string;
+  }) => Promise<void>;
 }
 
 async function fetchYearStudy(): Promise<YearStudy[]> {
@@ -60,12 +61,10 @@ async function fetchSemesters(): Promise<Semester[]> {
 export function CreateTimelineModal({
   opened,
   onClose,
-  timelineName,
-  setTimelineName,
-  timelineDesc,
-  setTimelineDesc,
-  handleCreate,
+  onSubmit,
 }: CreateTimelineModalProps) {
+  const [timelineName, setTimelineName] = useState("");
+  const [timelineDesc, setTimelineDesc] = useState("");
   const [selectedYear, setSelectedYear] = useState<string | null>(null);
   const [selectedSemester, setSelectedSemester] = useState<string | null>(null);
 
@@ -87,6 +86,26 @@ export function CreateTimelineModal({
 
   const yearOptions = yearStudyData.map((item) => item.year);
   const semesterOptions = semesterData.map((item) => item.semester);
+
+  useEffect(() => {
+    if (!opened) {
+      setTimelineName("");
+      setTimelineDesc("");
+      setSelectedYear(null);
+      setSelectedSemester(null);
+    }
+  }, [opened]);
+
+  const handleCreate = async () => {
+    if (!selectedYear || !selectedSemester) return;
+    
+    await onSubmit({
+      name: timelineName,
+      description: timelineDesc,
+      year: selectedYear,
+      semester: selectedSemester,
+    });
+  };
 
   return (
     <Modal
@@ -143,7 +162,7 @@ export function CreateTimelineModal({
         </Button>
         <Button
           onClick={handleCreate}
-          disabled={!timelineName.trim()}
+          disabled={!timelineName.trim() || !selectedYear || !selectedSemester}
           radius="md"
         >
           Tạo

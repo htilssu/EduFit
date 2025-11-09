@@ -27,8 +27,6 @@ export function TimeLineList() {
   const userState = useUser();
   const { data: userData, loading: isUserLoading } = userState;
   const queryClient = useQueryClient();
-  const [timelineName, setTimelineName] = useState("");
-  const [timelineDesc, setTimelineDesc] = useState("");
   const [selectedTimeline, setSelectedTimeline] = useState<Timeline | null>(
     null,
   );
@@ -73,12 +71,19 @@ export function TimeLineList() {
     // Optionally render an error state UI here
   }
 
-  const handleCreateTimeline = async () => {
+  const handleCreateTimeline = async (data: {
+    name: string;
+    description: string;
+    year: string;
+    semester: string;
+  }) => {
     try {
       const result = await createTimeLine({
-        name: timelineName,
-        description: timelineDesc || undefined,
+        name: data.name,
+        description: data.description || undefined,
         classes: [],
+        year: data.year,
+        semester: data.semester,
       });
 
       if (result.success) {
@@ -87,8 +92,6 @@ export function TimeLineList() {
           message: "Đã tạo lịch học mới",
           color: "green",
         });
-        setTimelineName("");
-        setTimelineDesc("");
         closeCreate();
         queryClient.invalidateQueries({ queryKey: ["timelines"] });
       } else {
@@ -108,14 +111,17 @@ export function TimeLineList() {
     }
   };
 
-  const handleEditTimeline = async () => {
+  const handleEditTimeline = async (data: {
+    name: string;
+    description: string;
+  }) => {
     if (!selectedTimeline) return;
 
     try {
       const result = await updateTimeLine({
         id: selectedTimeline.id,
-        name: timelineName,
-        description: timelineDesc || undefined,
+        name: data.name,
+        description: data.description || undefined,
         classes: selectedTimeline.classes
           ? JSON.parse(selectedTimeline.classes as string)
           : [],
@@ -128,8 +134,6 @@ export function TimeLineList() {
           color: "green",
         });
         setSelectedTimeline(null);
-        setTimelineName("");
-        setTimelineDesc("");
         closeEdit();
         queryClient.invalidateQueries({ queryKey: ["timelines"] });
       } else {
@@ -183,8 +187,6 @@ export function TimeLineList() {
 
   const openEditModal = (timeline: Timeline) => {
     setSelectedTimeline(timeline);
-    setTimelineName(timeline.name);
-    setTimelineDesc(timeline.description || "");
     openEdit();
   };
 
@@ -257,21 +259,14 @@ export function TimeLineList() {
       <CreateTimelineModal
         opened={createOpened}
         onClose={closeCreate}
-        timelineName={timelineName}
-        setTimelineName={setTimelineName}
-        timelineDesc={timelineDesc}
-        setTimelineDesc={setTimelineDesc}
-        handleCreate={handleCreateTimeline}
+        onSubmit={handleCreateTimeline}
       />
 
       <EditTimelineModal
         opened={editOpened}
         onClose={closeEdit}
-        timelineName={timelineName}
-        setTimelineName={setTimelineName}
-        timelineDesc={timelineDesc}
-        setTimelineDesc={setTimelineDesc}
-        handleEdit={handleEditTimeline}
+        timeline={selectedTimeline}
+        onSubmit={handleEditTimeline}
       />
 
       <DeleteTimelineModal

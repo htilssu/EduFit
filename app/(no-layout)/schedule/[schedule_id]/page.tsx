@@ -1,4 +1,4 @@
-import { getClass } from "@/lib/actions/class";
+import { getClass } from "@/lib/actions/class-action";
 import { auth } from "@/lib/auth";
 import { getTimeLine } from "@/lib/service/timeline";
 import { Metadata } from "next";

@@ -1,34 +1,43 @@
 import { Modal, TextInput, Textarea, Group, Button } from "@mantine/core";
+import { useState, useEffect } from "react";
+import { Timeline } from "./types";
 
 interface EditTimelineModalProps {
   opened: boolean;
   onClose: () => void;
-  timelineName: string;
-  setTimelineName: (name: string) => void;
-  timelineDesc: string;
-  setTimelineDesc: (desc: string) => void;
-  handleEdit: () => void;
+  timeline: Timeline | null;
+  onSubmit: (data: { name: string; description: string }) => Promise<void>;
 }
 
 /**
  * Modal để chỉnh sửa lịch học.
  * @param opened Trạng thái mở/đóng của modal.
  * @param onClose Hàm để đóng modal.
- * @param timelineName Tên lịch học hiện tại.
- * @param setTimelineName Hàm cập nhật tên lịch học.
- * @param timelineDesc Mô tả lịch học hiện tại.
- * @param setTimelineDesc Hàm cập nhật mô tả.
- * @param handleEdit Hàm xử lý lưu chỉnh sửa.
+ * @param timeline Lịch học cần chỉnh sửa.
+ * @param onSubmit Hàm xử lý lưu chỉnh sửa.
  */
 export function EditTimelineModal({
   opened,
   onClose,
-  timelineName,
-  setTimelineName,
-  timelineDesc,
-  setTimelineDesc,
-  handleEdit,
+  timeline,
+  onSubmit,
 }: EditTimelineModalProps) {
+  const [timelineName, setTimelineName] = useState("");
+  const [timelineDesc, setTimelineDesc] = useState("");
+
+  useEffect(() => {
+    if (opened && timeline) {
+      setTimelineName(timeline.name);
+      setTimelineDesc(timeline.description || "");
+    }
+  }, [opened, timeline]);
+
+  const handleEdit = async () => {
+    await onSubmit({
+      name: timelineName,
+      description: timelineDesc,
+    });
+  };
   return (
     <Modal
       opened={opened}

@@ -10,6 +10,8 @@ interface TimeLineData {
   description?: string;
   classes: ClassData[];
   isPublic?: boolean;
+  year?: string;
+  semester?: string;
 }
 
 interface UpdateTimeLineData extends TimeLineData {
@@ -47,6 +49,15 @@ export async function createTimeLine(
       };
     }
 
+    if (!data.year || !data.semester) {
+      return {
+        success: false,
+        error: "Năm học và học kỳ không được để trống",
+      };
+    }
+
+    console.log(data);
+
     const timeLine = await prisma.timeLine.create({
       data: {
         name: data.name,
@@ -54,6 +65,8 @@ export async function createTimeLine(
         classes: [],
         isPublic: data.isPublic || false,
         userId: session.user.id,
+        yearStudyId: data.year,
+        semesterId: data.semester,
       },
     });
 

@@ -203,21 +203,21 @@ model Week {
 }
 
 model TimeLine {
-  id               String     @id @default(auto()) @map("_id") @db.ObjectId
-  User             User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId           String     @db.ObjectId
-  name             String
-  description      String?
-  classes          Json       @default("[]") // Lưu trữ danh sách ID của các lớp học
-  isPublic         Boolean    @default(false)
-  majorId          String?    @db.ObjectId
-  Major            Major?     @relation(fields: [majorId], references: [id])
-  createdAt        DateTime   @default(now())
-  updatedAt        DateTime   @updatedAt
-  YearStudy        YearStudy? @relation(fields: [yearStudyYear], references: [year])
-  yearStudyYear    String?
-  Semester         Semester?  @relation(fields: [semesterSemester], references: [semester])
-  semesterSemester String?
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  User        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String     @db.ObjectId
+  name        String
+  description String?
+  classes     Json       @default("[]") // Lưu trữ danh sách ID của các lớp học
+  isPublic    Boolean    @default(false)
+  majorId     String?    @db.ObjectId
+  Major       Major?     @relation(fields: [majorId], references: [id])
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  YearStudy   YearStudy? @relation(fields: [yearStudyId], references: [year])
+  yearStudyId String?
+  Semester    Semester?  @relation(fields: [semesterId], references: [semester])
+  semesterId  String?
 }
 
 model Feedback {
