@@ -1,8 +1,5 @@
 "use server";
 
-import { cookies } from "next/headers";
-import { ScheduleConfig } from "@/lib/utils";
-import { redirect } from "next/navigation";
 import { cacheLife } from "next/dist/server/use-cache/cache-life";
 import { prisma } from "@/lib/prisma";
 import { cacheTag } from "next/dist/server/use-cache/cache-tag";
@@ -24,19 +21,20 @@ async function classCacheFunction(year: string, semester: string) {
   });
 }
 
-export async function getClass() {
-  const cookie = await cookies();
-  const classConfigCookie = cookie.get("classConfig");
+export async function getClass(timelineId: string) {
+  const timeline = await prisma.timeLine.findUnique({
+    where: {
+      id: timelineId,
+    },
+    select: {
+      yearStudyYear: true,
+      semesterSemester: true,
+    },
+  });
 
-  if (classConfigCookie) {
-    const classConfig: ScheduleConfig = JSON.parse(classConfigCookie.value);
-    var { year, semester, major } = classConfig;
-    if (year === "" && semester === "" && major === "") {
-      redirect("/schedule/setup");
-    }
-  } else {
-    redirect("/schedule/setup");
+  if (!timeline || !timeline.yearStudyYear || !timeline.semesterSemester) {
+    return [];
   }
 
-  return classCacheFunction(year, semester);
+  return classCacheFunction(timeline.yearStudyYear, timeline.semesterSemester);
 }

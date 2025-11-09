@@ -10,6 +10,7 @@ import {
   AccountLockedException,
 } from "@/lib/exceptions/authentication-exception";
 import { Role } from "@prisma/client";
+import Google from "next-auth/providers/google";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -50,6 +51,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           isUser: user.role === "DEFAULT_USER",
           isPremiumUser: user.role === "PREMIUM_USER",
         };
+      },
+    }),
+    Google({
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      authorization: {
+        params: {
+          prompt: "consent",
+          access_type: "offline",
+          response_type: "code",
+        },
       },
     }),
   ],

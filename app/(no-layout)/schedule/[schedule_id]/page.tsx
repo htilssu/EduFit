@@ -32,7 +32,6 @@ export const metadata: Metadata = {
 };
 
 async function Page({ params }: { params: Promise<{ schedule_id: string }> }) {
-  const classes = await getClass();
   const session = await auth();
   const { schedule_id } = await params;
   try {
@@ -43,6 +42,8 @@ async function Page({ params }: { params: Promise<{ schedule_id: string }> }) {
     if (timeLine?.userId !== session?.user?.id && !session?.user.isAdmin) {
       unauthorized();
     }
+
+    const classes = await getClass(schedule_id);
     return <ScheduleMain classes={classes} timeLine={timeLine} />;
   } catch {
     notFound();

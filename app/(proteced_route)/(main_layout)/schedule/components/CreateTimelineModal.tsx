@@ -6,6 +6,20 @@ import {
   Button,
   Select,
 } from "@mantine/core";
+import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+
+interface YearStudy {
+  year: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Semester {
+  semester: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 interface CreateTimelineModalProps {
   opened: boolean;
@@ -15,6 +29,22 @@ interface CreateTimelineModalProps {
   timelineDesc: string;
   setTimelineDesc: (desc: string) => void;
   handleCreate: () => void;
+}
+
+async function fetchYearStudy(): Promise<YearStudy[]> {
+  const response = await fetch("/api/studyYear");
+  if (!response.ok) {
+    throw new Error("Failed to fetch study years");
+  }
+  return response.json();
+}
+
+async function fetchSemesters(): Promise<Semester[]> {
+  const response = await fetch("/api/semester");
+  if (!response.ok) {
+    throw new Error("Failed to fetch semesters");
+  }
+  return response.json();
 }
 
 /**
@@ -36,6 +66,28 @@ export function CreateTimelineModal({
   setTimelineDesc,
   handleCreate,
 }: CreateTimelineModalProps) {
+  const [selectedYear, setSelectedYear] = useState<string | null>(null);
+  const [selectedSemester, setSelectedSemester] = useState<string | null>(null);
+
+  const { data: yearStudyData = [], isLoading: isLoadingYears } = useQuery<YearStudy[], Error>({
+    queryKey: ["yearStudy"],
+    queryFn: fetchYearStudy,
+    staleTime: 60 * 60 * 1000,
+    gcTime: 24 * 60 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
+  const { data: semesterData = [], isLoading: isLoadingSemesters } = useQuery<Semester[], Error>({
+    queryKey: ["semester"],
+    queryFn: fetchSemesters,
+    staleTime: 60 * 60 * 1000,
+    gcTime: 24 * 60 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
+  const yearOptions = yearStudyData.map((item) => item.year);
+  const semesterOptions = semesterData.map((item) => item.semester);
+
   return (
     <Modal
       opened={opened}
@@ -58,21 +110,24 @@ export function CreateTimelineModal({
         placeholder="Chọn năm học"
         mb="md"
         radius="md"
-        data={["React", "Angular", "Vue", "Svelte"]}
-      />{" "}
+        data={yearOptions}
+        value={selectedYear}
+        onChange={setSelectedYear}
+        disabled={isLoadingYears}
+        searchable
+        required
+      />
       <Select
         label="Học kỳ"
         placeholder="Chọn học kỳ"
         mb="md"
         radius="md"
-        data={["React", "Angular", "Vue", "Svelte"]}
-      />{" "}
-      <Select
-        label="Năm học"
-        placeholder="Chọn năm học"
-        mb="md"
-        radius="md"
-        data={["React", "Angular", "Vue", "Svelte"]}
+        data={semesterOptions}
+        value={selectedSemester}
+        onChange={setSelectedSemester}
+        disabled={isLoadingSemesters}
+        searchable
+        required
       />
       <Textarea
         label="Mô tả (tùy chọn)"
