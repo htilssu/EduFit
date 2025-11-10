@@ -41,6 +41,7 @@ model User {
   Code              Code[]
   CreditTransaction CreditTransaction[]
   AuditLog          AuditLog[]
+  Email             Email[]
 }
 
 model Account {
@@ -269,4 +270,27 @@ model AuditLog {
   details   String?
   ipAddress String?
   createdAt DateTime @default(now())
+}
+
+enum EmailStatus {
+  DRAFT
+  SENDING
+  SENT
+  FAILED
+}
+
+model Email {
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  subject     String
+  content     String
+  recipients  String[]
+  cc          String[]    @default([])
+  bcc         String[]    @default([])
+  status      EmailStatus @default(DRAFT)
+  sentBy      String      @db.ObjectId
+  sentByUser  User        @relation(fields: [sentBy], references: [id], onDelete: Cascade)
+  sentAt      DateTime?
+  error       String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 }

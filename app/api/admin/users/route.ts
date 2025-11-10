@@ -9,19 +9,23 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
     const search = searchParams.get("search") || "";
+    const q = searchParams.get("q") || "";
 
+    const searchQuery = q || search;
     const skip = (page - 1) * limit;
 
+    const whereClause = searchQuery
+      ? {
+          OR: [
+            { name: { contains: searchQuery, mode: "insensitive" as const } },
+            { email: { contains: searchQuery, mode: "insensitive" as const } },
+            { username: { contains: searchQuery, mode: "insensitive" as const } },
+          ],
+        }
+      : {};
+
     // Get total count for pagination
-    const total = await prisma.user.count({
-      where: {
-        OR: [
-          { name: { contains: search, mode: "insensitive" } },
-          { email: { contains: search, mode: "insensitive" } },
-          { username: { contains: search, mode: "insensitive" } },
-        ],
-      },
-    });
+    const total = await prisma.user.count({ where: whereClause });
 
     // Get paginated users
     const users = await prisma.user.findMany({
@@ -35,13 +39,7 @@ export async function GET(req: NextRequest) {
         isActive: true,
         createdAt: true,
       },
-      where: {
-        OR: [
-          { name: { contains: search, mode: "insensitive" } },
-          { email: { contains: search, mode: "insensitive" } },
-          { username: { contains: search, mode: "insensitive" } },
-        ],
-      },
+      where: whereClause,
       orderBy: {
         createdAt: "desc",
       },

@@ -30,7 +30,7 @@ export class DatabaseManager {
 
   // Lưu danh sách tuần học
   async saveWeeks(
-    weeks: (WeekResponse & { semester: string; yearValue: string })[]
+    weeks: (WeekResponse & { semester: string; yearValue: string })[],
   ) {
     for (const week of weeks) {
       try {
@@ -86,71 +86,117 @@ export class DatabaseManager {
 
   // Lưu danh sách lớp học
   async saveClasses(classes: ClassExtractData[], year: string, term: string) {
-    for (const classItem of classes) {
-      let lecturer = await prisma.lecturer.findFirst({
-        where: { name: classItem.lectureName },
+    // Lấy tất cả lecturer names từ classes
+    const lecturerNames = [...new Set(classes.map((c) => c.lectureName))];
+
+    // Tìm tất cả lecturers hiện có
+    const existingLecturers = await prisma.lecturer.findMany({
+      where: { name: { in: lecturerNames } },
+    });
+
+    const existingLecturerMap = new Map(
+      existingLecturers.map((l) => [l.name, l]),
+    );
+
+    // Tạo lecturers mới nếu cần
+    const newLecturerNames = lecturerNames.filter(
+      (name) => !existingLecturerMap.has(name),
+    );
+
+    if (newLecturerNames.length > 0) {
+      await prisma.lecturer.createMany({
+        data: newLecturerNames.map((name) => ({ name })),
       });
 
-      if (!lecturer) {
-        lecturer = await prisma.lecturer.create({
-          data: { name: classItem.lectureName },
-        });
-      }
+      // Lấy lại lecturers vừa tạo
+      const newLecturers = await prisma.lecturer.findMany({
+        where: { name: { in: newLecturerNames } },
+      });
+
+      newLecturers.forEach((l) => existingLecturerMap.set(l.name, l));
+    }
+
+    // Lấy tất cả classes hiện có trong năm học và kỳ này
+    const existingClasses = await prisma.class.findMany({
+      where: {
+        yearStudyId: year,
+        semesterId: term,
+      },
+      include: { Lecturer: true },
+    });
+
+    const existingClassMap = new Map(
+      existingClasses.map((c) => [c.classId, c]),
+    );
+
+    // Phân loại classes: tạo mới vs cập nhật
+    const classesToCreate: any[] = [];
+    const classesToUpdate: any[] = [];
+
+    for (const classItem of classes) {
+      const lecturer = existingLecturerMap.get(classItem.lectureName);
+      if (!lecturer) continue;
 
       const weekDays = classItem.learningSection.map(
-        (section) => section.weekDay
+        (section) => section.weekDay,
       );
 
-      const existingClass = await prisma.class.findFirst({
-        where: {
-          classId: classItem.classId,
-          learningSection: {
-            some: {
-              weekDay: { in: weekDays },
-            },
-          },
-          semesterId: term,
-          yearStudyId: year,
-        },
-        include: { Lecturer: true },
-      });
+      const existingClass = existingClassMap.get(classItem.classId);
 
       if (!existingClass) {
-        try {
-          const { subjectId, classId, type, learningSection } = classItem;
-          await prisma.class.create({
-            data: {
-              classId,
-              type,
-              learningSection,
-              Subject: { connect: { id: subjectId } },
-              YearStudy: { connect: { year } },
-              Semester: { connect: { semester: term } },
-              Lecturer: { connect: { id: lecturer.id } },
-            },
-          });
-          info("Lưu lớp học thành công: " + classId);
-        } catch (e) {
-          error("Lỗi khi lưu lớp học: " + classItem.classId);
-          error(e);
-        }
+        classesToCreate.push({
+          classId: classItem.classId,
+          type: classItem.type,
+          learningSection: classItem.learningSection,
+          subjectId: classItem.subjectId,
+          yearStudyId: year,
+          semesterId: term,
+          lecturerId: lecturer.id,
+        });
       } else if (existingClass.Lecturer.name !== classItem.lectureName) {
-        try {
-          await prisma.class.update({
-            where: { id: existingClass.id },
-            data: { Lecturer: { connect: { id: lecturer.id } } },
-          });
+        classesToUpdate.push({
+          id: existingClass.id,
+          lecturerId: lecturer.id,
+          classId: classItem.classId,
+          oldLecturerName: existingClass.Lecturer.name,
+          newLecturerName: classItem.lectureName,
+        });
+      }
+    }
+
+    // Tạo classes mới bằng createMany
+    if (classesToCreate.length > 0) {
+      try {
+        const result = await prisma.class.createMany({
+          data: classesToCreate,
+        });
+        info(`Lưu ${result.count} lớp học mới thành công`);
+      } catch (e) {
+        error("Lỗi khi lưu batch classes");
+        error(e);
+      }
+    }
+
+    // Cập nhật lecturer cho các classes hiện có
+    if (classesToUpdate.length > 0) {
+      try {
+        await prisma.$transaction(
+          classesToUpdate.map((c) =>
+            prisma.class.update({
+              where: { id: c.id },
+              data: { lecturerId: c.lecturerId },
+            }),
+          ),
+        );
+        info(`Cập nhật ${classesToUpdate.length} giảng viên thành công`);
+        classesToUpdate.forEach((c) => {
           info(
-            "Cập nhật giảng viên thành công cho lớp học: " +
-              classItem.classId +
-              ` | ${existingClass.Lecturer.name}-->${classItem.lectureName}`
+            `Cập nhật: ${c.classId} | ${c.oldLecturerName} --> ${c.newLecturerName}`,
           );
-        } catch (e) {
-          error(
-            "Lỗi khi cập nhật giảng viên cho lớp học: " + classItem.classId
-          );
-          error(e);
-        }
+        });
+      } catch (e) {
+        error("Lỗi khi cập nhật batch lecturers");
+        error(e);
       }
     }
   }

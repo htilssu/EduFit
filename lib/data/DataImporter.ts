@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { PortalScraper } from "@/lib/data/PortalScraper";
 import { DataExtractor } from "@/lib/data/DataExtractor";
 import { DatabaseManager } from "@/lib/data/DatabaseManager";
-import { debug } from "@/lib/utils/logging";
+import { debug, info } from "@/lib/utils/logging";
 
 export class DataImporter {
   private scraper: PortalScraper;
@@ -38,7 +38,7 @@ export class DataImporter {
 
           const classStudents = await this.scraper.getClassStudentByTerm(
             year,
-            term
+            term,
           );
           const studentClasses =
             this.extractor.handleStudentClass(classStudents);
@@ -48,7 +48,7 @@ export class DataImporter {
               year,
               term,
               weekData.Week,
-              studentClass + "03"
+              studentClass + "03",
             );
             const subjects =
               this.extractor.extractSubjectsFromHtml(subjectHtml);
@@ -78,7 +78,7 @@ export class DataImporter {
             term,
             subject.id,
             1,
-            weekTarget.weekName
+            weekTarget.weekName,
           );
           const classes = this.extractor.extractClassesFromHtml(classHtml);
           await this.dbManager.saveClasses(classes, year, term);
@@ -101,18 +101,30 @@ export class DataImporter {
     }
 
     const weekTarget = week[3]; // Tuần thứ 4
+    info(weekTarget);
     const subjects = await prisma.subject.findMany();
     for (const subject of subjects) {
-      const classHtml = await this.scraper.getClassData(
-        year,
-        term,
-        subject.id,
-        1,
-        weekTarget.weekName
-      );
-      const classes = this.extractor.extractClassesFromHtml(classHtml);
-      debug(classes);
-      await this.dbManager.saveClasses(classes, year, term);
+      let weekName = weekTarget.weekName;
+      while (weekName - weekTarget.weekName < 10) {
+        const classHtml = await this.scraper.getClassData(
+          year,
+          term,
+          subject.id,
+          1,
+          weekName,
+        );
+        const classes = this.extractor.extractClassesFromHtml(classHtml);
+        debug(classes);
+        if (classes.length === 0) {
+          debug(
+            `Không tìm thấy lớp học cho môn ${subject.id} năm ${year} kỳ ${term} tuần ${weekName}`,
+          );
+          weekName++;
+          continue;
+        }
+        await this.dbManager.saveClasses(classes, year, term);
+        break;
+      }
     }
   }
 }

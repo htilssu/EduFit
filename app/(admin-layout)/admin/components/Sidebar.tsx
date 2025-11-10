@@ -16,7 +16,8 @@ import {
   Ticket,
   Ban,
   Star,
-  Package
+  Package,
+  Mail
 } from "lucide-react";
 import { cn } from "@/lib/utils/TwMerge";
 
@@ -71,6 +72,11 @@ const sidebarItems: SidebarItem[] = [
     title: "Quản lý dịch vụ",
     href: "/admin/services",
     icon: Package,
+  },
+  {
+    title: "Quản lý Mail",
+    href: "/admin/mail",
+    icon: Mail,
   },
   {
     title: "Thống kê",
