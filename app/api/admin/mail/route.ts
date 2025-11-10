@@ -64,9 +64,37 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { subject, content, recipients, cc = [], bcc = [], sendNow } = body;
+    const { subject, content, recipients, cc = [], bcc = [], sendNow, sendToAllUsers = false } = body;
 
-    if (!subject || !content || !recipients || recipients.length === 0) {
+    // If sendToAllUsers is true, get all non-admin users
+    let finalRecipients = recipients;
+    let finalCc = cc;
+    let finalBcc = bcc;
+
+    if (sendToAllUsers) {
+      const allUsers = await prisma.user.findMany({
+        where: {
+          role: { not: "ADMIN" },
+        },
+        select: {
+          email: true,
+        },
+      });
+      
+      // Send as BCC to all non-admin users
+      finalRecipients = []; // Empty To field
+      finalCc = [];
+      finalBcc = allUsers.map(user => user.email);
+    }
+
+    if (!subject || !content) {
+      return NextResponse.json(
+        { error: "Missing required fields" },
+        { status: 400 }
+      );
+    }
+
+    if (!sendToAllUsers && (!recipients || recipients.length === 0)) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -77,9 +105,9 @@ export async function POST(request: NextRequest) {
       data: {
         subject,
         content,
-        recipients,
-        cc,
-        bcc,
+        recipients: finalRecipients,
+        cc: finalCc,
+        bcc: finalBcc,
         status: sendNow ? "SENDING" : "DRAFT",
         sentBy: session.user.id,
         sentAt: sendNow ? new Date() : null,
@@ -133,9 +161,14 @@ async function sendEmailAsync(emailId: string) {
     const fromName = process.env.MAIL_FROM_NAME || "EDUFIT";
     const fromAddress = process.env.MAIL_FROM || process.env.MAIL_USER;
     
+    // If only BCC (send to all users), use sender as To
+    const toField = email.recipients.length > 0 
+      ? email.recipients.join(", ")
+      : fromAddress;
+    
     await transporter.sendMail({
       from: `"${fromName}" <${fromAddress}>`,
-      to: email.recipients.join(", "),
+      to: toField,
       cc: email.cc.length > 0 ? email.cc.join(", ") : undefined,
       bcc: email.bcc.length > 0 ? email.bcc.join(", ") : undefined,
       subject: email.subject,

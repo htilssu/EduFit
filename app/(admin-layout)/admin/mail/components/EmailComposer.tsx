@@ -39,6 +39,7 @@ export default function EmailComposer({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch] = useDebouncedValue(searchQuery, 300);
+  const [sendToAllUsers, setSendToAllUsers] = useState(false);
 
   const { data: usersData, isLoading: isLoadingUsers } = useQuery({
     queryKey: ["users-search", debouncedSearch],
@@ -53,7 +54,7 @@ export default function EmailComposer({
       if (!response.ok) throw new Error("Failed to fetch users");
       return response.json();
     },
-    enabled: isOpen,
+    enabled: isOpen && !sendToAllUsers,
   });
 
   const form = useForm({
@@ -64,12 +65,15 @@ export default function EmailComposer({
       cc: editingEmail?.cc || ([] as string[]),
       bcc: editingEmail?.bcc || ([] as string[]),
       sendNow: false,
+      sendToAllUsers: false,
     },
     validate: {
       subject: (value) => (!value ? "Subject is required" : null),
       content: (value) => (!value ? "Content is required" : null),
-      recipients: (value) =>
-        value.length === 0 ? "At least one recipient is required" : null,
+      recipients: (value, values) =>
+        !values.sendToAllUsers && value.length === 0
+          ? "At least one recipient is required"
+          : null,
     },
   });
 
@@ -91,30 +95,46 @@ export default function EmailComposer({
         cc: editingEmail.cc,
         bcc: editingEmail.bcc,
         sendNow: false,
+        sendToAllUsers: false,
       });
+      setSendToAllUsers(false);
     } else {
       form.reset();
+      setSendToAllUsers(false);
     }
   }, [editingEmail]);
+
+  useEffect(() => {
+    if (sendToAllUsers) {
+      form.setFieldValue("recipients", []);
+      form.setFieldValue("cc", []);
+      form.setFieldValue("bcc", []);
+    }
+  }, [sendToAllUsers]);
 
   const handleSubmit = async (values: typeof form.values) => {
     setIsSubmitting(true);
     try {
       let response;
       
+      const payload = {
+        ...values,
+        sendToAllUsers,
+      };
+      
       if (editingEmail) {
         // Update existing email
         response = await fetch(`/api/admin/mail/${editingEmail.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(values),
+          body: JSON.stringify(payload),
         });
       } else {
         // Create new email
         response = await fetch("/api/admin/mail", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(values),
+          body: JSON.stringify(payload),
         });
       }
 
@@ -124,6 +144,10 @@ export default function EmailComposer({
         title: "Success",
         message: editingEmail 
           ? "Email updated successfully"
+          : sendToAllUsers
+          ? values.sendNow
+            ? "Email is being sent to all users"
+            : "Email saved as draft (will be sent to all users)"
           : values.sendNow
           ? "Email is being sent"
           : "Email saved as draft",
@@ -131,6 +155,7 @@ export default function EmailComposer({
       });
 
       form.reset();
+      setSendToAllUsers(false);
       onSuccess();
     } catch (error) {
       notifications.show({
@@ -154,39 +179,51 @@ export default function EmailComposer({
       <LoadingOverlay visible={isSubmitting} />
 
       <form onSubmit={form.onSubmit(handleSubmit)} className="space-y-4">
-        <MultiSelect
-          label="Recipients (To)"
-          placeholder="Search and select recipients"
-          data={userOptions}
-          searchable
-          required
-          onSearchChange={setSearchQuery}
-          searchValue={searchQuery}
-          disabled={isLoadingUsers}
-          {...form.getInputProps("recipients")}
+        <Switch
+          label="Send to all users (except admins)"
+          description="When enabled, email will be sent as BCC to all non-admin users"
+          checked={sendToAllUsers}
+          onChange={(event) => setSendToAllUsers(event.currentTarget.checked)}
+          mb="md"
         />
 
-        <MultiSelect
-          label="CC (Carbon Copy)"
-          placeholder="Search and select CC recipients"
-          data={userOptions}
-          searchable
-          onSearchChange={setSearchQuery}
-          searchValue={searchQuery}
-          disabled={isLoadingUsers}
-          {...form.getInputProps("cc")}
-        />
+        {!sendToAllUsers && (
+          <>
+            <MultiSelect
+              label="Recipients (To)"
+              placeholder="Search and select recipients"
+              data={userOptions}
+              searchable
+              required
+              onSearchChange={setSearchQuery}
+              searchValue={searchQuery}
+              disabled={isLoadingUsers}
+              {...form.getInputProps("recipients")}
+            />
 
-        <MultiSelect
-          label="BCC (Blind Carbon Copy)"
-          placeholder="Search and select BCC recipients"
-          data={userOptions}
-          searchable
-          onSearchChange={setSearchQuery}
-          searchValue={searchQuery}
-          disabled={isLoadingUsers}
-          {...form.getInputProps("bcc")}
-        />
+            <MultiSelect
+              label="CC (Carbon Copy)"
+              placeholder="Search and select CC recipients"
+              data={userOptions}
+              searchable
+              onSearchChange={setSearchQuery}
+              searchValue={searchQuery}
+              disabled={isLoadingUsers}
+              {...form.getInputProps("cc")}
+            />
+
+            <MultiSelect
+              label="BCC (Blind Carbon Copy)"
+              placeholder="Search and select BCC recipients"
+              data={userOptions}
+              searchable
+              onSearchChange={setSearchQuery}
+              searchValue={searchQuery}
+              disabled={isLoadingUsers}
+              {...form.getInputProps("bcc")}
+            />
+          </>
+        )}
 
         <TextInput
           label="Subject"

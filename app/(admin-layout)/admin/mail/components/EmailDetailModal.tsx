@@ -61,47 +61,67 @@ export default function EmailDetailModal({
           <p className="mt-1 text-gray-900">{email.subject}</p>
         </div>
 
-        <div>
-          <label className="text-sm font-semibold text-gray-700">
-            To ({email.recipients.length})
-          </label>
-          <div className="mt-1 space-y-1">
-            {email.recipients.map((recipient, index) => (
-              <div key={index} className="text-sm text-gray-600">
-                {recipient}
+        {email.recipients.length === 0 && email.cc.length === 0 && email.bcc.length > 0 ? (
+          <div>
+            <label className="text-sm font-semibold text-gray-700">
+              Recipients
+            </label>
+            <div className="mt-1 p-3 bg-blue-50 rounded border border-blue-200">
+              <p className="text-sm text-blue-800 font-medium">
+                📧 Sent to all users (BCC: {email.bcc.length} recipients)
+              </p>
+              <p className="text-xs text-blue-600 mt-1">
+                All non-admin users received this email privately
+              </p>
+            </div>
+          </div>
+        ) : (
+          <>
+            {email.recipients.length > 0 && (
+              <div>
+                <label className="text-sm font-semibold text-gray-700">
+                  To ({email.recipients.length})
+                </label>
+                <div className="mt-1 space-y-1">
+                  {email.recipients.map((recipient, index) => (
+                    <div key={index} className="text-sm text-gray-600">
+                      {recipient}
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
-          </div>
-        </div>
+            )}
 
-        {email.cc.length > 0 && (
-          <div>
-            <label className="text-sm font-semibold text-gray-700">
-              CC ({email.cc.length})
-            </label>
-            <div className="mt-1 space-y-1">
-              {email.cc.map((recipient, index) => (
-                <div key={index} className="text-sm text-gray-600">
-                  {recipient}
+            {email.cc.length > 0 && (
+              <div>
+                <label className="text-sm font-semibold text-gray-700">
+                  CC ({email.cc.length})
+                </label>
+                <div className="mt-1 space-y-1">
+                  {email.cc.map((recipient, index) => (
+                    <div key={index} className="text-sm text-gray-600">
+                      {recipient}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
+              </div>
+            )}
 
-        {email.bcc.length > 0 && (
-          <div>
-            <label className="text-sm font-semibold text-gray-700">
-              BCC ({email.bcc.length})
-            </label>
-            <div className="mt-1 space-y-1">
-              {email.bcc.map((recipient, index) => (
-                <div key={index} className="text-sm text-gray-600">
-                  {recipient}
+            {email.bcc.length > 0 && (
+              <div>
+                <label className="text-sm font-semibold text-gray-700">
+                  BCC ({email.bcc.length})
+                </label>
+                <div className="mt-1 space-y-1">
+                  {email.bcc.map((recipient, index) => (
+                    <div key={index} className="text-sm text-gray-600">
+                      {recipient}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
+              </div>
+            )}
+          </>
         )}
 
         <div>

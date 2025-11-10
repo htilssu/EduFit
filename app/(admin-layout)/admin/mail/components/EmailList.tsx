@@ -87,11 +87,19 @@ export default function EmailList({
                 <Table.Tr key={email.id}>
                   <Table.Td className="font-medium">{email.subject}</Table.Td>
                   <Table.Td>
-                    <div className="text-sm text-gray-600">
-                      <div>To: {email.recipients.length}</div>
-                      {email.cc.length > 0 && <div>CC: {email.cc.length}</div>}
-                      {email.bcc.length > 0 && <div>BCC: {email.bcc.length}</div>}
-                    </div>
+                    {email.recipients.length === 0 && email.cc.length === 0 && email.bcc.length > 0 ? (
+                      <div className="text-sm">
+                        <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">
+                          📧 All Users ({email.bcc.length})
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="text-sm text-gray-600">
+                        <div>To: {email.recipients.length}</div>
+                        {email.cc.length > 0 && <div>CC: {email.cc.length}</div>}
+                        {email.bcc.length > 0 && <div>BCC: {email.bcc.length}</div>}
+                      </div>
+                    )}
                   </Table.Td>
                   <Table.Td>
                     <Badge color={statusColors[email.status]}>

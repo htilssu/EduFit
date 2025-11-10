@@ -4,16 +4,16 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await auth();
     if (!session?.user || session.user.role !== "ADMIN") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
+    const mailId = (await params).id;
     const email = await prisma.email.findUnique({
-      where: { id: params.id },
+      where: { id: mailId },
       include: {
         sentByUser: {
           select: {
@@ -35,14 +35,14 @@ export async function GET(
     console.error("Error fetching email:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await auth();
@@ -50,8 +50,10 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id } = await params;
+
     await prisma.email.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ message: "Email deleted successfully" });
@@ -59,14 +61,14 @@ export async function DELETE(
     console.error("Error deleting email:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await auth();
@@ -74,11 +76,12 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id } = await params;
     const body = await request.json();
     const { subject, content, recipients, cc, bcc, status } = body;
 
     const email = await prisma.email.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(subject && { subject }),
         ...(content && { content }),
@@ -104,7 +107,7 @@ export async function PATCH(
     console.error("Error updating email:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

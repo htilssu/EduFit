@@ -73,9 +73,14 @@ async function sendEmailAsync(emailId: string) {
     const fromName = process.env.MAIL_FROM_NAME || "EDUFIT";
     const fromAddress = process.env.MAIL_FROM || process.env.MAIL_USER;
     
+    // If only BCC (send to all users), use sender as To
+    const toField = email.recipients.length > 0 
+      ? email.recipients.join(", ")
+      : fromAddress;
+    
     await transporter.sendMail({
       from: `"${fromName}" <${fromAddress}>`,
-      to: email.recipients.join(", "),
+      to: toField,
       cc: email.cc.length > 0 ? email.cc.join(", ") : undefined,
       bcc: email.bcc.length > 0 ? email.bcc.join(", ") : undefined,
       subject: email.subject,
