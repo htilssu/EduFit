@@ -46,6 +46,7 @@
     "dayjs": "^1.11.18",
     "framer-motion": "^12.23.12",
     "gpt-tokenizer": "^2.9.0",
+    "html2canvas": "^1.4.1",
     "jose": "^5.10.0",
     "jsonwebtoken": "^9.0.2",
     "lodash": "^4.17.21",

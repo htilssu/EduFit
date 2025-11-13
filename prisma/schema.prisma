@@ -42,6 +42,8 @@ model User {
   CreditTransaction CreditTransaction[]
   AuditLog          AuditLog[]
   Email             Email[]
+  Report            Report[]
+  ReportMessage     ReportMessage[]
 }
 
 model Account {
@@ -293,4 +295,35 @@ model Email {
   error       String?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
+}
+
+enum ReportStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+model Report {
+  id          String         @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String
+  screenshot  String?
+  status      ReportStatus   @default(OPEN)
+  userId      String         @db.ObjectId
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages    ReportMessage[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model ReportMessage {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  reportId  String   @db.ObjectId
+  report    Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message   String
+  isAdmin   Boolean  @default(false)
+  createdAt DateTime @default(now())
 }
