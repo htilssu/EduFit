@@ -72,12 +72,12 @@ export async function createBadWordAction(words: string[]) {
       newWords.map((word) =>
         prisma.badWord.create({
           data: { word },
-        })
-      )
+        }),
+      ),
     );
 
     revalidatePath("/admin/badwords"); // Revalidate trang quản lý
-    revalidateTag("bad-words");
+    revalidateTag("bad-words", "max");
     return {
       success: true,
       badWords: createdBadWords,
@@ -108,7 +108,7 @@ export async function deleteBadWordAction(id: string) {
       where: { id },
     });
     revalidatePath("/admin/badwords"); // Revalidate trang quản lý
-    revalidateTag("bad-words");
+    revalidateTag("bad-words", "max");
     return { success: true };
   } catch (error) {
     console.error("Error deleting bad word:", error);

@@ -16,7 +16,7 @@ function checkAdminAccess(session: any) {
   return session?.user && session.user.isAdmin;
 }
 
-export default async function middleware(req: NextRequest) {
+export default async function proxy(req: NextRequest) {
   const session = await auth();
 
   if (/^\/admin/i.test(req.nextUrl.pathname)) {

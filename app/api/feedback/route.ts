@@ -1,5 +1,3 @@
-export const dynamic = "force-dynamic";
-
 import { NextRequest, NextResponse } from "next/server";
 import { getFeedbacks } from "@/lib/service/feedback";
 
@@ -16,7 +14,7 @@ export const GET = async (request: NextRequest) => {
     console.error("Error fetching feedbacks:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 };

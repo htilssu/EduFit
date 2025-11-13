@@ -1,5 +1,3 @@
-export const dynamic = "force-dynamic";
-
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
@@ -19,7 +17,9 @@ export async function GET(req: NextRequest) {
           OR: [
             { name: { contains: searchQuery, mode: "insensitive" as const } },
             { email: { contains: searchQuery, mode: "insensitive" as const } },
-            { username: { contains: searchQuery, mode: "insensitive" as const } },
+            {
+              username: { contains: searchQuery, mode: "insensitive" as const },
+            },
           ],
         }
       : {};
@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
     console.error("Error fetching users:", error);
     return NextResponse.json(
       { error: "Failed to fetch users" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

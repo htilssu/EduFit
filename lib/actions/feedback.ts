@@ -36,7 +36,7 @@ export async function createFeedback(data: {
 
     // Kiểm tra từ cấm với cache
     const { hasBadWords, badWords } = await BadWordService.checkBadWords(
-      data.content
+      data.content,
     );
 
     if (hasBadWords) {
@@ -62,7 +62,7 @@ export async function createFeedback(data: {
       },
     });
 
-    revalidateTag("feedback");
+    revalidateTag("feedback", "max");
 
     return {
       success: true,
@@ -121,7 +121,7 @@ export async function deleteFeedback(id: string) {
   });
 
   // Revalidate cache
-  revalidateTag("feedback");
+  revalidateTag("feedback", "max");
 
   return { success: true, message: "Đã xóa feedback thành công" };
 }

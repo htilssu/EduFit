@@ -1,16 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { unstable_cache } from "next/cache";
+import { cacheLife, cacheTag, unstable_cache } from "next/cache";
 
-const getYearStudy = unstable_cache(
-  async () => {
-    return prisma.yearStudy.findMany();
-  },
-  ["yearStudy"],
-  {
-    revalidate: 3600 * 24 * 7,
-  }
-);
+const getYearStudy = async () => {
+  "use cache";
+  cacheTag("yearStudy");
+  cacheLife("days");
+  return prisma.yearStudy.findMany();
+};
 
 export async function GET() {
   const year = await getYearStudy();

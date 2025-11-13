@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Major, PrismaClient } from "@prisma/client";
-import { unstable_cacheLife as cacheLife } from "next/cache";
+import { PrismaClient } from "@prisma/client";
+import { cacheLife } from "next/cache";
 import { cacheTag } from "next/dist/server/use-cache/cache-tag";
 
 const prisma = new PrismaClient();
